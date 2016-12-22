@@ -17,18 +17,23 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 # Authors:
-#   Daniel Izquierdo Cortazar <dizquierdo@bitergia.com>
 #   Alberto Pérez García-Plaza <alpgarcia@bitergia.com>
 #
 
-class TermFilter:
-    """
-    Filter for terms
-    """
-    
-    TYPE = 'terms'
+import json
 
-    def __init__(self, field_name, field_value):
-        self.type = self.TYPE
-        self.field_name = field_name
-        self.field_value = field_value
+def json_date_handler(obj):
+    """ Handle dates in JSON for beautifying purposes
+    """
+    if hasattr(obj, 'isoformat'):
+        return obj.isoformat()
+    else:
+        raise TypeError
+
+
+def beautify(json_str):
+    """ Beautify JSON string
+    """
+    return json.dumps(json_str, indent=2, \
+        #sort_keys=True,
+        default=json_date_handler)

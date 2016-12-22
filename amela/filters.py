@@ -21,35 +21,49 @@
 #   Alberto Pérez García-Plaza <alpgarcia@bitergia.com>
 #
 
-import elasticsearch
-import elasticsearch_dsl
 
-from .filters.terms_filter import TermFilter
-
-
-class Metric:
+class Filter:
     """
-    AMELA: Abstract MEtric LAyer
-
-    All metrics should be created on top of Metric
-    abstraction.
+    Generic Filter
     """
 
-    def __init__(self, es_hosts, index_name):
-        client = elasticsearch.Elasticsearch(es_hosts)
-        self.__s = elasticsearch_dsl.Search(using=client, index=index_name)
+    def __init__(self, filter_type, field_name, field_value):
+        self.__type = filter_type
+        self.__field_name = field_name
+        self.__field_value = field_value
 
-    def filter(self, f):
-        '''Adds a given filter to the query. Up to now
-        it only understands term filters
-        '''
-        if f.type == TermFilter.TYPE:
-            f_dict = { f.field_name : [f.field_value] }
-            print(f_dict)
-            self.__s = self.__s.filter(f.type, ** f_dict)
-            print(self.__s.to_dict())
+    def type(self):
+        return self.__type
 
-        return self
+    def field_name(self):
+        return self.__field_name
 
-    def execute(self):
-        return self.__s.execute()
+    def field_value(self):
+        return self.__field_value
+
+
+class Terms(Filter):
+    """
+    Filter for terms
+    """
+
+    def __init__(self, field_name, field_value):
+        super().__init__('terms', field_name, field_value)
+
+
+class Range(Filter):
+    """
+    Filter for ranges
+    """
+
+    def __init__(self, field_name, field_value):
+        super().__init__('range', field_name, field_value)
+
+
+class GreaterThan(Range):
+    """
+    Filter for ranges greater than
+    """
+
+    def __init__(self, field_name, n):
+        super().__init__(field_name, field_value={'gt': n})
