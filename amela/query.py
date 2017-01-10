@@ -31,80 +31,140 @@ abstraction.
 import elasticsearch
 import elasticsearch_dsl
 
-import amela.utils
+import amela.utils as utils
+
+from amela.enums import MetricType
+from amela.enums import BucketType
+
 
 class Query:
     """
     Base class for building Queries
     """
 
-    PRECISION=3000
+    METRIC = 'metric'
+    ENTITY = 'entity'
+    AGG_TYPE = 'type'
+
+    PRECISION = 3000
 
     def __init__(self, es_hosts):
         self.__client = elasticsearch.Elasticsearch(es_hosts)
         self.__s = None
+        self.__aggs = []
+        self.__metrics = []
 
-    def search(self, index_name):
-        """ Reset Query by creating a new search object
-        """
-        self.__s = elasticsearch_dsl.Search(using=self.__client, index=index_name)
-        return self
+    def metric(self, metric_type, entity):
+        self.__metrics.append({self.METRIC: metric_type, self.ENTITY: entity})
 
-    def unique_count(self, name, field, parent=None):
-        """ Count unique values in a field
-        """
-        if parent is None:
-            self.__s.aggs.metric(name, 'cardinality', field=field,
-                precision_threshold=self.PRECISION)
-        else:
-            a = self.__s
-            for ancestor in parent.split('.'):
-                a = a.aggs[ancestor]
-            a.metric(name, 'cardinality', field=field,
-                precision_threshold=self.PRECISION)
+    def group_by_date(self, entity, interval):
+        pass
 
-        return self
+    def group_by_terms(self, entity):
+        self.__aggs.append({self.AGG_TYPE: BucketType.terms, self.ENTITY: entity})
 
-    def group_by_quarters(self, name, field, parent=None):
-        """ Bucketize data in quarters
-        """
-        if parent is None:
-            self.__s.aggs.bucket(name, 'date_histogram', \
-                field=field, interval='quarter')
-        else:
-            a = self.__s
-            for ancestor in parent.split('.'):
-                a = a.aggs[ancestor]
-            a.bucket(name, 'date_histogram', \
-                field=field, interval='quarter')
+    def solve(self, entity):
 
-        return self
+        s = elasticsearch_dsl.Search(using=self.__client, index=entity.index_name)
 
-    def group_by_terms(self, name, field, parent=None):
-        """ Bucketize data by terms
-        """
-        if parent is None:
-            self.__s.aggs.bucket(name, 'terms', field=field)
-        else:
-            a = self.__s
-            for ancestor in parent.split('.'):
-                a = a.aggs[ancestor]
-            a.bucket(name, 'terms', field=field)
+        parent_bucket = s.aggs
+        for agg in self.__aggs:
+            btype = agg[self.AGG_TYPE]
+            field_name = agg[self.ENTITY].field_name
+            name = btype.name + '.' + field_name
 
-        return self
+            if btype == BucketType.terms:
+                parent_bucket = parent_bucket.bucket(name, 'terms',
+                    field=field_name)
 
-    def filter(self, custom_filter):
-        """Adds a given filter to the query.
-        """
-        f_dict = {custom_filter.field_name() : custom_filter.field_value()}
+            elif btype == BucketType.date:
+                pass
 
-        self.__s = self.__s.filter(custom_filter.type(), ** f_dict)
+        for metric in self.__metrics:
+            mtype = metric[self.METRIC]
+            field_name = metric[self.ENTITY].field_name
+            name = mtype.name + '.' + field_name
 
-        return self
+            if mtype == MetricType.unique_count:
+                parent_bucket.metric(name, 'cardinality',
+                    field=field_name,
+                    precision_threshold=self.PRECISION)
 
-    def execute(self):
-        """ Execute query
-        """
+            elif mtype == MetricType.avg:
+                parent_bucket.metric(name, 'avg',
+                    field=field_name)
+
+
+
         # TODO print query in debug mode
-        print('Q=\n', amela.utils.beautify(self.__s.to_dict()))
-        return self.__s.execute()
+        #print('Q=\n', s.to_dict())
+        print('Q=\n', utils.beautify(s.to_dict()))
+        return s.execute()
+
+
+    ## OLD METHODS
+
+    # def search(self, index_name):
+    #     """ Reset Query by creating a new search object
+    #     """
+    #     self.__s = elasticsearch_dsl.Search(using=self.__client, index=index_name)
+    #     return self
+    #
+    # def unique_count(self, name, field, parent=None):
+    #     """ Count unique values in a field
+    #     """
+    #     if parent is None:
+    #         self.__s.aggs.metric(name, 'cardinality', field=field,
+    #             precision_threshold=self.PRECISION)
+    #     else:
+    #         a = self.__s
+    #         for ancestor in parent.split('.'):
+    #             a = a.aggs[ancestor]
+    #         a.metric(name, 'cardinality', field=field,
+    #             precision_threshold=self.PRECISION)
+    #
+    #     return self
+    #
+    # def group_by_quarters(self, name, field, parent=None):
+    #     """ Bucketize data in quarters
+    #     """
+    #     if parent is None:
+    #         self.__s.aggs.bucket(name, 'date_histogram', \
+    #             field=field, interval='quarter')
+    #     else:
+    #         a = self.__s
+    #         for ancestor in parent.split('.'):
+    #             a = a.aggs[ancestor]
+    #         a.bucket(name, 'date_histogram', \
+    #             field=field, interval='quarter')
+    #
+    #     return self
+    #
+    # def group_by_terms(self, name, field, parent=None):
+    #     """ Bucketize data by terms
+    #     """
+    #     if parent is None:
+    #         self.__s.aggs.bucket(name, 'terms', field=field)
+    #     else:
+    #         a = self.__s
+    #         for ancestor in parent.split('.'):
+    #             a = a.aggs[ancestor]
+    #         a.bucket(name, 'terms', field=field)
+    #
+    #     return self
+    #
+    # def filter(self, custom_filter):
+    #     """Adds a given filter to the query.
+    #     """
+    #     f_dict = {custom_filter.field_name() : custom_filter.field_value()}
+    #
+    #     self.__s = self.__s.filter(custom_filter.type(), ** f_dict)
+    #
+    #     return self
+    #
+    # def execute(self):
+    #     """ Execute query
+    #     """
+    #     # TODO print query in debug mode
+    #     print('Q=\n', utils.beautify(self.__s.to_dict()))
+    #     return self.__s.execute()
