@@ -27,14 +27,15 @@ AMELA: Abstract MEtric LAyer
 All metrics should be created on top of Metric
 abstraction.
 """
-
+import copy
 import elasticsearch
 import elasticsearch_dsl
 
 import amela.utils as utils
 
-from amela.enums import MetricType
-from amela.enums import BucketType
+from amela.query_buckets import TermsBucket
+from amela.query_metrics import UniqueCount
+from amela.query_metrics import Average
 
 
 class Query:
@@ -42,64 +43,66 @@ class Query:
     Base class for building Queries
     """
 
-    METRIC = 'metric'
-    ENTITY = 'entity'
-    AGG_TYPE = 'type'
-
-    PRECISION = 3000
-
-    def __init__(self, es_hosts):
-        self.__client = elasticsearch.Elasticsearch(es_hosts)
-        self.__s = None
+    def __init__(self, entity = None):
         self.__aggs = []
         self.__metrics = []
+        self.__filters = []
+        self.__entity  = entity
 
-    def metric(self, metric_type, entity):
-        self.__metrics.append({self.METRIC: metric_type, self.ENTITY: entity})
+    def metric(self, metric):
+        self.__metrics.append(metric)
+        return self
 
-    def group_by_date(self, entity, interval):
-        pass
+    def bucket(self, bucket):
+        self.__aggs.append(bucket)
+        return self
 
-    def group_by_terms(self, entity):
-        self.__aggs.append({self.AGG_TYPE: BucketType.terms, self.ENTITY: entity})
+    def filter(self, fil):
+        self.__filters.append(fil)
+        return self
 
-    def solve(self, entity):
+    def clone(self):
+        return copy.deepcopy(self)
 
-        s = elasticsearch_dsl.Search(using=self.__client, index=entity.index_name)
+    def solve(self):
+
+        db =  {
+            'es_hosts' : ["http://127.0.0.1:9200"],
+            'dbname' : 'git'
+        }
+
+        client = elasticsearch.Elasticsearch(db['es_hosts'])
+        s = elasticsearch_dsl.Search(using=client, index=db['dbname'])
 
         parent_bucket = s.aggs
-        for agg in self.__aggs:
-            btype = agg[self.AGG_TYPE]
-            field_name = agg[self.ENTITY].field_name
-            name = btype.name + '.' + field_name
 
-            if btype == BucketType.terms:
-                parent_bucket = parent_bucket.bucket(name, 'terms',
-                    field=field_name)
+        for fil in self.__filters:
+            parent_bucket = fil.solve(parent_bucket)
 
-            elif btype == BucketType.date:
-                pass
+        for bucket in self.__aggs:
+            parent_bucket = bucket.solve(parent_bucket, self.__entity)
 
         for metric in self.__metrics:
-            mtype = metric[self.METRIC]
-            field_name = metric[self.ENTITY].field_name
-            name = mtype.name + '.' + field_name
-
-            if mtype == MetricType.unique_count:
-                parent_bucket.metric(name, 'cardinality',
-                    field=field_name,
-                    precision_threshold=self.PRECISION)
-
-            elif mtype == MetricType.avg:
-                parent_bucket.metric(name, 'avg',
-                    field=field_name)
-
-
+            metric.solve(parent_bucket, self.__entity)
 
         # TODO print query in debug mode
         #print('Q=\n', s.to_dict())
         print('Q=\n', utils.beautify(s.to_dict()))
         return s.execute()
+
+
+class Search(Query):
+
+    def __init__(self, entity, *term_buckets_entities):
+        super().__init__(entity)
+
+        # TODO filters
+        for fil in entity.filters:
+            self.filter(fil)
+
+        for eb in term_buckets_entities:
+            self.bucket(TermsBucket(eb))
+
 
 
     ## OLD METHODS

@@ -19,17 +19,31 @@
 # Authors:
 #   Daniel Izquierdo Cortazar <dizquierdo@bitergia.com>
 #   Alberto Pérez García-Plaza <alpgarcia@bitergia.com>
+#   Santiago Dueñas <sduenas@bitergia.com>
 #
 
 class Entity:
     field_name = None
+    date_field_name = 'grimoire_creation_date'
     index_name = 'git'
+    filters = []
+
 
 class Author(Entity):
     field_name = 'author_name'
 
+# class ClosedIssue(Entity):
+#
+#     def __init__(self):
+#         self._filters.append(ClosedFilter)
+
 class Commit(Entity):
     field_name = 'hash'
+
+    # def __init__(self, merges=True):
+    #     if merges:
+    #         self._filters.append(MergesFilter)
+
 
 class Repo(Entity):
     field_name = 'repo_name'

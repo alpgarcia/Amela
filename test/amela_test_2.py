@@ -28,59 +28,92 @@ from datetime import datetime
 sys.path.insert(0, '..')
 
 import amela.utils as utils
+import amela.operations as ops
 
 from amela.query import Query
-from amela.enums import MetricType
-from amela.enums import BucketType
+from amela.query import Search
+from amela.query_metrics import UniqueCount
+from amela.query_metrics import Average
+from amela.query_buckets import TermsBucket
 from amela.entities import Author
 from amela.entities import Commit
 from amela.entities import Repo
 from amela.entities import File
-from amela.entities import Entity
 
 def pretty_print(json_str):
     print('R=\n', utils.beautify(json_str))
 
-def unique(entity, q=None):
-    if q is None:
-        q = Query(es_hosts=["http://127.0.0.1:9200"])
-    q.metric(MetricType.unique_count, entity)
-    return q
+def test_query():
 
-def avg(entity, q=None):
-    if q is None:
-        q = Query(es_hosts=["http://127.0.0.1:9200"])
-    q.metric(MetricType.avg, entity)
-    return q
-
-
-def test():
-
-    q = unique(Author)
-    r = q.solve(Author)
+    print("Unique Count Authors")
+    q = Query().metric(UniqueCount(Author))
+    r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
-    q = unique(Commit)
-    r = q.solve(Commit)
+    print("Unique Count Commits")
+    q = Query().metric(UniqueCount(Commit))
+    r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
-    q = unique(Repo)
-    r = q.solve(Repo)
+    print("Unique Count Repos")
+    q = Query().metric(UniqueCount(Repo))
+    r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
-    q = unique(Commit)
-    q.group_by_terms(Repo)
-    r = q.solve(Entity)
+    print("Unique Count Commits by Repo")
+    q = Query().bucket(TermsBucket(Repo)).metric(UniqueCount(Commit))
+    r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
-    q = unique(Commit)
-    q = unique(Author, q)
-    q = avg(File, q)
-    q.group_by_terms(Repo)
-    r = q.solve(Entity)
+    print("Unique Count Commits, Author and Avg Files by Repo")
+    q = Query() \
+        .bucket(TermsBucket(Repo)) \
+        .metric(UniqueCount(Commit)) \
+        .metric(UniqueCount(Author)) \
+        .metric(Average(File))
+    r = q.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+    print("Bucketize by Repo and then by Commit")
+    q = Query() \
+        .bucket(TermsBucket(Repo)) \
+        .bucket(TermsBucket(Commit))
+    r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
 
+def test_search():
+    print("Unique Count Commits by Month")
+    s = Search(Commit)
+    uc = ops.unique_count(s)
+    sp = ops.split(uc)
+    r = sp.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+    print("Unique Count Authors by Month")
+    s = Search(Author)
+    uc = ops.unique_count(s)
+    sp = ops.split(uc)
+    r = sp.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+    print("Average Files  by Month")
+    s = Search(File)
+    uc = ops.average(s)
+    sp = ops.split(uc)
+    r = sp.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+
+def print_header(text):
+    print("\n_________")
+    print("\___ ___/")
+    print("   | |   ", text)
+    print("   |_|\n")
 
 if __name__ == '__main__':
-    test()
+    print_header("QUERY TESTS")
+    test_query()
+
+    print_header("SEARCH TESTS")
+    test_search()

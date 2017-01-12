@@ -20,19 +20,32 @@
 #   Alberto Pérez García-Plaza <alpgarcia@bitergia.com>
 #   Daniel Izquierdo Cortazar <dizquierdo@bitergia.com>
 #
+
 from enum import Enum, unique
 
 @unique
-class MetricType(Enum):
-    avg = 0
-    median = 1
-    count = 2
-    unique_count = 3
-    max_value = 4
-    min_value = 5
-    sum_values = 6
+class Interval(Enum):
+    year    = 1
+    quarter = 2
+    month   = 3
+    week    = 4
+    day     = 5
+    hour    = 6
+    minute  = 7
+    second  = 8
 
-@unique
-class BucketType(Enum):
-    terms = 0
-    date = 1
+#
+# @unique
+# class MetricType(Enum):
+#     avg = 0
+#     median = 1
+#     count = 2
+#     unique_count = 3
+#     max_value = 4
+#     min_value = 5
+#     sum_values = 6
+#
+# @unique
+# class BucketType(Enum):
+#     terms = 0
+#     date = 1
