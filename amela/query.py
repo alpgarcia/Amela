@@ -74,10 +74,12 @@ class Query:
         client = elasticsearch.Elasticsearch(db['es_hosts'])
         s = elasticsearch_dsl.Search(using=client, index=db['dbname'])
 
-        parent_bucket = s.aggs
+        parent_bucket = s
 
         for fil in self.__filters:
-            parent_bucket = fil.solve(parent_bucket)
+            parent_bucket = fil.solve(parent_bucket, self.__entity)
+
+        parent_bucket = parent_bucket.aggs
 
         for bucket in self.__aggs:
             parent_bucket = bucket.solve(parent_bucket, self.__entity)
@@ -96,7 +98,6 @@ class Search(Query):
     def __init__(self, entity, *term_buckets_entities):
         super().__init__(entity)
 
-        # TODO filters
         for fil in entity.filters:
             self.filter(fil)
 

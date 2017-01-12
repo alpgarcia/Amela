@@ -26,44 +26,51 @@ class Filter:
     """
     Generic Filter
     """
+    filter_type = None
 
-    def __init__(self, filter_type, field_name, field_value):
-        self.__type = filter_type
-        self.__field_name = field_name
-        self.__field_value = field_value
+    def __init__(self, entity, field_value):
+        self.entity = entity
+        self.field_value = field_value
+        self._kwargs = {}
 
-    def type(self):
-        return self.__type
+    def get_field_name(self):
+        return self.entity.field_name
 
-    def field_name(self):
-        return self.__field_name
+    def fill_args(self):
+        self._kwargs[self.get_field_name()] = self.field_value
 
-    def field_value(self):
-        return self.__field_value
+    def solve(self, parent, entity):
+        if self.entity is None:
+            self.entity = entity
 
+        if not self.entity:
+            raise ValueError
+
+        self.fill_args()
+        print(self._kwargs)
+        return parent.filter(self.filter_type, **self._kwargs)
 
 class Terms(Filter):
     """
     Filter for terms
     """
-
-    def __init__(self, field_name, field_value):
-        super().__init__('terms', field_name, field_value)
+    filter_type = 'terms'
 
 
-class Range(Filter):
-    """
-    Filter for ranges
-    """
-
-    def __init__(self, field_name, field_value):
-        super().__init__('range', field_name, field_value)
-
-
-class GreaterThan(Range):
+class GreaterThan(Filter):
     """
     Filter for ranges greater than
     """
+    filter_type = 'range'
 
-    def __init__(self, field_name, n):
-        super().__init__(field_name, field_value={'gt': n})
+    def fill_args(self):
+        self._kwargs[self.get_field_name()] = {'gt': self.field_value}
+
+# def filter(self, custom_filter):
+#     """Adds a given filter to the query.
+#     """
+#     f_dict = {custom_filter.field_name() : custom_filter.field_value()}
+#
+#     self.__s = self.__s.filter(custom_filter.type(), ** f_dict)
+#
+#     return self

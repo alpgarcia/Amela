@@ -30,7 +30,6 @@ class ESMetric:
         self.entity = entity
         self._kwargs = {}
 
-
     def get_name(self):
         field_name = self.get_field_name()
         return self.type_name + '.' + field_name

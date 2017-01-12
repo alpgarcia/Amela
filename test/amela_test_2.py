@@ -84,7 +84,7 @@ def test_query():
 
 def test_search():
     print("Unique Count Commits by Month")
-    s = Search(Commit)
+    s = Search(Commit())
     uc = ops.unique_count(s)
     sp = ops.split(uc)
     r = sp.solve()
@@ -97,7 +97,7 @@ def test_search():
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
-    print("Average Files  by Month")
+    print("Average Files by Month")
     s = Search(File)
     uc = ops.average(s)
     sp = ops.split(uc)
@@ -112,8 +112,8 @@ def print_header(text):
     print("   |_|\n")
 
 if __name__ == '__main__':
-    print_header("QUERY TESTS")
-    test_query()
+    # print_header("QUERY TESTS")
+    # test_query()
 
     print_header("SEARCH TESTS")
     test_search()
