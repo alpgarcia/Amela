@@ -22,14 +22,13 @@
 #   Santiago Dueñas <sduenas@bitergia.com>
 #
 
-from amela.filters import GreaterThan
+from amela.query_filters import GreaterThan
 
 class Entity:
     field_name = None
     date_field_name = 'grimoire_creation_date'
     index_name = 'git'
     filters = []
-
 
 class Author(Entity):
     field_name = 'author_name'
@@ -42,10 +41,9 @@ class Author(Entity):
 class Commit(Entity):
     field_name = 'hash'
 
-    def __init__(self, merges=True):
-        if merges:
+    def __init__(self, filter_merges=True):
+        if filter_merges:
             self.filters.append(GreaterThan(File, 0))
-
 
 class Repo(Entity):
     field_name = 'repo_name'

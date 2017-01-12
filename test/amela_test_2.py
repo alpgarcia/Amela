@@ -23,12 +23,11 @@
 
 
 import sys
-from datetime import datetime
 
 sys.path.insert(0, '..')
 
 import amela.utils as utils
-import amela.operations as ops
+import amela.operations as app
 
 from amela.query import Query
 from amela.query import Search
@@ -83,24 +82,35 @@ def test_query():
 
 
 def test_search():
-    print("Unique Count Commits by Month")
-    s = Search(Commit())
-    uc = ops.unique_count(s)
-    sp = ops.split(uc)
+    print("Unique Count Commits by Author by Month (Filtering Merges)")
+    # Add Author bucketing to test only filter
+    # (we should retrieve just Santis' bucket)
+    s = Search(Commit(), Author)
+    p = app.only(s, Author, 'Santiago Dueñas')
+    uc = app.unique_count(p)
+    sp = app.split(uc)
+    r = sp.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+    print("Unique Count Commits by Author by Month")
+    s = Search(Commit(filter_merges=False))
+    p = app.only(s, Author, 'Santiago Dueñas')
+    uc = app.unique_count(p)
+    sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Unique Count Authors by Month")
     s = Search(Author)
-    uc = ops.unique_count(s)
-    sp = ops.split(uc)
+    uc = app.unique_count(s)
+    sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Average Files by Month")
     s = Search(File)
-    uc = ops.average(s)
-    sp = ops.split(uc)
+    uc = app.average(s)
+    sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
@@ -112,8 +122,8 @@ def print_header(text):
     print("   |_|\n")
 
 if __name__ == '__main__':
-    # print_header("QUERY TESTS")
-    # test_query()
+    print_header("QUERY TESTS")
+    test_query()
 
     print_header("SEARCH TESTS")
     test_search()

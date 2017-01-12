@@ -74,12 +74,13 @@ class Query:
         client = elasticsearch.Elasticsearch(db['es_hosts'])
         s = elasticsearch_dsl.Search(using=client, index=db['dbname'])
 
-        parent_bucket = s
-
+        # Filters are applied directly over DSL Search object
         for fil in self.__filters:
-            parent_bucket = fil.solve(parent_bucket, self.__entity)
+            s = fil.solve(s, self.__entity)
 
-        parent_bucket = parent_bucket.aggs
+        # Once filters are associated to Search object we can get_name
+        # a ref to aggs part and add all aggregations to that point
+        parent_bucket = s.aggs
 
         for bucket in self.__aggs:
             parent_bucket = bucket.solve(parent_bucket, self.__entity)
@@ -88,7 +89,6 @@ class Query:
             metric.solve(parent_bucket, self.__entity)
 
         # TODO print query in debug mode
-        #print('Q=\n', s.to_dict())
         print('Q=\n', utils.beautify(s.to_dict()))
         return s.execute()
 

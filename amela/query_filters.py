@@ -39,7 +39,7 @@ class Filter:
     def fill_args(self):
         self._kwargs[self.get_field_name()] = self.field_value
 
-    def solve(self, parent, entity):
+    def solve(self, search, entity):
         if self.entity is None:
             self.entity = entity
 
@@ -47,14 +47,16 @@ class Filter:
             raise ValueError
 
         self.fill_args()
-        print(self._kwargs)
-        return parent.filter(self.filter_type, **self._kwargs)
+        return search.filter(self.filter_type, **self._kwargs)
 
-class Terms(Filter):
+class TermsFilter(Filter):
     """
     Filter for terms
     """
     filter_type = 'terms'
+
+    def fill_args(self):
+        self._kwargs[self.get_field_name()] = [self.field_value]
 
 
 class GreaterThan(Filter):
@@ -65,12 +67,3 @@ class GreaterThan(Filter):
 
     def fill_args(self):
         self._kwargs[self.get_field_name()] = {'gt': self.field_value}
-
-# def filter(self, custom_filter):
-#     """Adds a given filter to the query.
-#     """
-#     f_dict = {custom_filter.field_name() : custom_filter.field_value()}
-#
-#     self.__s = self.__s.filter(custom_filter.type(), ** f_dict)
-#
-#     return self
