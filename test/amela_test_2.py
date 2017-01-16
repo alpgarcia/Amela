@@ -114,6 +114,11 @@ def test_search():
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
+    print("Onion Study")
+    s = Search(Commit(), Author)
+    result = app.onion(s, Commit(), Author())
+    print(result)
+
 
 def print_header(text):
     print("\n_________")
