@@ -119,6 +119,15 @@ def test_search():
     result = app.onion(s, Commit(), Author())
     print(result)
 
+    print("Commits per project")
+    s = Search(Commit(), Project() )
+    aut = app.unique_count(s, entity=Author())
+    org = app.unique_count(aut, entity=Repo())
+    com = app.unique_count(org)
+    r = com.solve()
+    pretty_print(r.to_dict()['aggregations'])
+
+
 
 def print_header(text):
     print("\n_________")
