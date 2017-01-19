@@ -38,6 +38,7 @@ from amela.entities import Author
 from amela.entities import Commit
 from amela.entities import Repo
 from amela.entities import File
+from amela.entities import Project
 
 def pretty_print(json_str):
     print('R=\n', utils.beautify(json_str))
@@ -50,7 +51,7 @@ def test_query():
     pretty_print(r.to_dict()['aggregations'])
 
     print("Unique Count Commits")
-    q = Query().metric(UniqueCount(Commit))
+    q = Query().metric(UniqueCount(Commit()))
     r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
@@ -60,23 +61,23 @@ def test_query():
     pretty_print(r.to_dict()['aggregations'])
 
     print("Unique Count Commits by Repo")
-    q = Query().bucket(TermsBucket(Repo)).metric(UniqueCount(Commit))
+    q = Query().bucket(TermsBucket(Repo)).metric(UniqueCount(Commit()))
     r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Unique Count Commits, Author and Avg Files by Repo")
     q = Query() \
         .bucket(TermsBucket(Repo)) \
-        .metric(UniqueCount(Commit)) \
+        .metric(UniqueCount(Commit())) \
         .metric(UniqueCount(Author)) \
-        .metric(Average(File))
+        .metric(Average(File()))
     r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Bucketize by Repo and then by Commit")
     q = Query() \
         .bucket(TermsBucket(Repo)) \
-        .bucket(TermsBucket(Commit))
+        .bucket(TermsBucket(Commit()))
     r = q.solve()
     pretty_print(r.to_dict()['aggregations'])
 
@@ -85,8 +86,8 @@ def test_search():
     print("Unique Count Commits by Author by Month (Filtering Merges)")
     # Add Author bucketing to test only filter
     # (we should retrieve just Santis' bucket)
-    s = Search(Commit(), Author)
-    p = app.only(s, Author, 'Santiago Dueñas')
+    s = Search(Commit(), Author())
+    p = app.only(s, Author(), 'Santiago Dueñas')
     uc = app.unique_count(p)
     sp = app.split(uc)
     r = sp.solve()
@@ -94,33 +95,33 @@ def test_search():
 
     print("Unique Count Commits by Author by Month")
     s = Search(Commit(filter_merges=False))
-    p = app.only(s, Author, 'Santiago Dueñas')
+    p = app.only(s, Author(), 'Santiago Dueñas')
     uc = app.unique_count(p)
     sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Unique Count Authors by Month")
-    s = Search(Author)
+    s = Search(Author())
     uc = app.unique_count(s)
     sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Average Files by Month")
-    s = Search(File)
+    s = Search(File())
     uc = app.average(s)
     sp = app.split(uc)
     r = sp.solve()
     pretty_print(r.to_dict()['aggregations'])
 
     print("Onion Study")
-    s = Search(Commit(), Author)
+    s = Search(Commit(), Author())
     result = app.onion(s, Commit(), Author())
     print(result)
 
     print("Commits per project")
-    s = Search(Commit(), Project() )
+    s = Search(Commit(), Project())
     aut = app.unique_count(s, entity=Author())
     org = app.unique_count(aut, entity=Repo())
     com = app.unique_count(org)

@@ -28,7 +28,9 @@ class Entity:
     field_name = None
     date_field_name = 'grimoire_creation_date'
     index_name = 'git'
-    filters = []
+
+    def __init__(self):
+        self.filters = []
 
 class Author(Entity):
     field_name = 'author_name'
@@ -42,8 +44,9 @@ class Commit(Entity):
     field_name = 'hash'
 
     def __init__(self, filter_merges=True):
+        super().__init__()
         if filter_merges:
-            self.filters.append(GreaterThan(File, 0))
+            self.filters.append(GreaterThan(File(), 0))
 
 class Repo(Entity):
     field_name = 'repo_name'
