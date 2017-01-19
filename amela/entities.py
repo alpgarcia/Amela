@@ -50,3 +50,6 @@ class Repo(Entity):
 
 class File(Entity):
     field_name = 'files'
+
+class Project(Entity):
+    field_name = 'project'
